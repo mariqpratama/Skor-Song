@@ -11,7 +11,7 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://unpkg.com/chart.js"></script>
-    <script src="https://unpkg.com/lucide-react@latest/dist/umd/lucide-react.min.js"></script>
+    <script src="https://unpkg.com/lucide-react@0.469.0/dist/umd/lucide-react.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/framer-motion@11/dist/framer-motion.js"></script>
 
     <style>
@@ -47,17 +47,28 @@
         const { useState, useEffect, useRef, Fragment } = React;
         const MotionModule = window.Motion || window.FramerMotion || { motion: ({children}) => <div>{children}</div>, AnimatePresence: ({children}) => <Fragment>{children}</Fragment> };
         const { motion, AnimatePresence } = MotionModule;
-        const Lucide = window.LucideReact || window.lucide || {};
-        const { 
-            History, Award, Plus, Trash2, Pencil, TrendingUp 
-        } = Lucide;
-
-        // Custom Icon Component helper for UMD version
-        const Icon = ({ icon: IconComponent, className }) => {
-            if (!IconComponent || typeof IconComponent !== 'function') {
-                return <span className={className}>•</span>;
+        
+        // Robust icon component that looks up Lucide icons by name with fallbacks
+        const Icon = ({ name, className, size = 16 }) => {
+            const lib = window.LucideReact || window.lucide || window.Lucide || {};
+            const icons = lib.icons || lib;
+            
+            const lookup = (n) => icons[n] || icons[n.charAt(0).toUpperCase() + n.slice(1)];
+            
+            let Component = lookup(name);
+            
+            // Fallbacks for common naming variations
+            if (!Component) {
+                if (name === 'Pencil') Component = lookup('Edit') || lookup('Edit3') || lookup('Edit2');
+                if (name === 'Trash2') Component = lookup('Trash');
+                if (name === 'History') Component = lookup('Clock') || lookup('RotateCcw');
             }
-            return <IconComponent className={className} size={16} />;
+            
+            if (!Component) {
+                return <span className={className} style={{fontSize: size + 'px'}}>•</span>;
+            }
+            
+            return <Component className={className} size={size} strokeWidth={2} />;
         };
 
         const DEFAULT_COLORS = [
@@ -287,7 +298,7 @@
                                         <input type="text" value={player.name} onChange={(e) => handlePlayerNameChange(player.id, e.target.value)}
                                             className="w-full border-none outline-none font-bold text-sm md:text-base bg-transparent p-0 pr-6 focus:text-[#3b82f6] transition-colors truncate"
                                             placeholder={`Pemain ${player.id}`} />
-                                        <Icon icon={Pencil} className="w-3.5 h-3.5 absolute right-0 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none" />
+                                        <Icon name="Pencil" className="w-3.5 h-3.5 absolute right-0 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none" />
                                     </div>
                                     <div className="mt-0.5 font-mono text-xl md:text-2xl font-black tabular-nums" style={{ color: player.color }}>
                                         {player.totalScore}
@@ -303,7 +314,7 @@
                                     <section className="col-span-12 md:col-span-5 bg-white border-[1.5px] border-[#e2e8f0] rounded-2xl p-4 md:p-6 flex flex-col shadow-sm">
                                         <div className="flex items-center justify-between mb-5">
                                             <h2 className="text-sm font-bold flex items-center gap-2">
-                                                <Icon icon={Plus} className="text-emerald-500 w-4 h-4" /> Input Ronde
+                                                <Icon name="Plus" className="text-emerald-500 w-4 h-4" /> Input Ronde
                                             </h2>
                                             <span className="text-[10px] font-black text-[#64748b] bg-slate-100 px-2 py-0.5 rounded ring-1 ring-slate-200">RONDE {rounds.length + 1}</span>
                                         </div>
@@ -335,7 +346,7 @@
                                     {/* History Section */}
                                     <section className="col-span-12 md:col-span-7 bg-white border-[1.5px] border-[#e2e8f0] rounded-2xl p-4 md:p-6 flex flex-col h-[450px] md:h-auto overflow-hidden shadow-sm">
                                         <div className="flex items-center justify-between mb-4">
-                                            <h2 className="text-sm font-bold flex items-center gap-2"><Icon icon={History} className="text-slate-400 w-4 h-4" /> Riwayat Permainan</h2>
+                                            <h2 className="text-sm font-bold flex items-center gap-2"><Icon name="History" className="text-slate-400 w-4 h-4" /> Riwayat Permainan</h2>
                                         </div>
                                         <div className="flex-1 overflow-x-auto ring-1 ring-slate-100 rounded-lg custom-scrollbar">
                                             <table className="w-full border-collapse min-w-[500px]">
@@ -363,7 +374,7 @@
                                                                     </td>
                                                                 ))}
                                                                 <td className="p-3 text-right">
-                                                                    <button onClick={() => deleteRound(idx)} className="p-2 text-slate-300 hover:text-rose-500 transition-all"><Icon icon={Trash2} className="w-4 h-4" /></button>
+                                                                    <button onClick={() => deleteRound(idx)} className="p-2 text-slate-300 hover:text-rose-500 transition-all"><Icon name="Trash2" className="w-4 h-4" /></button>
                                                                 </td>
                                                             </tr>
                                                         );
@@ -372,7 +383,7 @@
                                             </table>
                                             {rounds.length === 0 && (
                                                 <div className="flex flex-col items-center justify-center h-48 text-slate-300 gap-2">
-                                                    <Icon icon={History} className="opacity-20 w-8 h-8" />
+                                                    <Icon name="History" className="opacity-20 w-8 h-8" />
                                                     <span className="text-xs font-bold uppercase tracking-widest opacity-40 italic">Belum Ada Riwayat</span>
                                                 </div>
                                             )}
@@ -384,7 +395,7 @@
                                     {/* Leaderboard Section */}
                                     <section className="col-span-12 md:col-span-4 bg-white border-[1.5px] border-[#e2e8f0] rounded-2xl p-5 md:p-6 flex flex-col shadow-sm">
                                         <div className="flex items-center gap-2 mb-6">
-                                            <Icon icon={Award} className="text-amber-500 w-5 h-5" />
+                                            <Icon name="Award" className="text-amber-500 w-5 h-5" />
                                             <h2 className="text-sm font-bold">Peringkat Akhir</h2>
                                         </div>
                                         <div className="space-y-3">
@@ -411,7 +422,7 @@
                                     {/* Chart Section */}
                                     <section className="col-span-12 md:col-span-8 bg-white border-[1.5px] border-[#e2e8f0] rounded-2xl p-5 md:p-6 flex flex-col shadow-sm h-[400px] md:h-auto">
                                         <div className="flex items-center justify-between mb-6">
-                                            <h2 className="text-sm font-bold flex items-center gap-2"><Icon icon={TrendingUp} className="text-blue-500 w-5 h-5" /> Grafik Pergerakan</h2>
+                                            <h2 className="text-sm font-bold flex items-center gap-2"><Icon name="TrendingUp" className="text-blue-500 w-5 h-5" /> Grafik Pergerakan</h2>
                                         </div>
                                         <RecapChart players={players} rounds={rounds} />
                                         <div className="flex justify-between border-t border-slate-50 pt-3">
