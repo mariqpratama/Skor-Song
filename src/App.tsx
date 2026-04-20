@@ -33,7 +33,7 @@ interface Player {
 interface Round {
   roundNumber: number;
   scores: { [playerId: number]: number };
-  asSekopPlayerId: number | null;
+  asCounts: { [playerId: number]: number };
 }
 
 const RecapChart = ({ players, rounds }: { players: Player[], rounds: Round[] }) => {
@@ -129,7 +129,9 @@ export default function App() {
   const [currentRoundInput, setCurrentRoundInput] = useState<{ [playerId: number]: string }>({
     1: '', 2: '', 3: '', 4: '', 5: ''
   });
-  const [currentAsSekop, setCurrentAsSekop] = useState<number | null>(null);
+  const [currentAsCounts, setCurrentAsCounts] = useState<{ [playerId: number]: number }>({
+    1: 0, 2: 0, 3: 0, 4: 0, 5: 0
+  });
   const [isGameEnded, setIsGameEnded] = useState(false);
 
   const handlePlayerNameChange = (id: number, newName: string) => {
@@ -140,14 +142,34 @@ export default function App() {
     setCurrentRoundInput(prev => ({ ...prev, [playerId]: value }));
   };
 
+  const toggleAsSekop = (playerId: number) => {
+    const totalAsSelected: number = (Object.values(currentAsCounts) as number[]).reduce((a: number, b: number) => a + b, 0);
+    
+    setCurrentAsCounts(prev => {
+      const currentCount = prev[playerId];
+      let nextCount = 0;
+      
+      if (currentCount === 0) {
+        if (totalAsSelected < 2) nextCount = 1;
+        else nextCount = 0;
+      } else if (currentCount === 1) {
+        if (totalAsSelected < 2) nextCount = 2;
+        else nextCount = 0;
+      } else {
+        nextCount = 0;
+      }
+      
+      return { ...prev, [playerId]: nextCount };
+    });
+  };
+
   const saveRound = () => {
-    // Validate if AS Sekop is selected
-    if (currentAsSekop === null) {
-      alert('Pilih pemegang AS Sekop Hitam terlebih dahulu!');
+    const totalAsSelected: number = (Object.values(currentAsCounts) as number[]).reduce((a: number, b: number) => a + b, 0);
+    if (totalAsSelected !== 2) {
+      alert('Kedua kartu AS harus dipilih/dibagikan sebelum menyimpan ronde!');
       return;
     }
 
-    // Validate if all scores are filled
     const allFilled = players.every(p => currentRoundInput[p.id] !== '');
     if (!allFilled) {
       alert('Semua skor pemain harus diisi terlebih dahulu! (Isi 0 jika tidak ada poin)');
@@ -157,7 +179,8 @@ export default function App() {
     const roundScores: { [playerId: number]: number } = {};
     const updatedPlayers = players.map(player => {
       const baseScore = parseInt(currentRoundInput[player.id]) || 0;
-      const additional = player.id === currentAsSekop ? 15 : 0;
+      const asCount = currentAsCounts[player.id] || 0;
+      const additional = asCount * 15;
       const finalRoundScore = baseScore + additional;
       
       roundScores[player.id] = finalRoundScore;
@@ -171,23 +194,22 @@ export default function App() {
     const newRound: Round = {
       roundNumber: rounds.length + 1,
       scores: roundScores,
-      asSekopPlayerId: currentAsSekop
+      asCounts: { ...currentAsCounts }
     };
 
     setRounds([...rounds, newRound]);
     setPlayers(updatedPlayers);
     
-    // Reset inputs
     setCurrentRoundInput({ 1: '', 2: '', 3: '', 4: '', 5: '' });
-    setCurrentAsSekop(null);
+    setCurrentAsCounts({ 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 });
   };
 
   const startNewSession = () => {
     setRounds([]);
     setPlayers(prev => prev.map(p => ({ ...p, totalScore: 0 })));
     setIsGameEnded(false);
-    setCurrentAsSekop(null);
-    setCurrentRoundInput({ 1: '0', 2: '0', 3: '0', 4: '0', 5: '0' });
+    setCurrentAsCounts({ 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 });
+    setCurrentRoundInput({ 1: '', 2: '', 3: '', 4: '', 5: '' });
   };
 
   const deleteRound = (index: number) => {
@@ -206,9 +228,10 @@ export default function App() {
   const asSekopStats = (() => {
     if (rounds.length === 0) return null;
     const counts = rounds.reduce((acc, r) => {
-      if (r.asSekopPlayerId !== null) {
-        acc[r.asSekopPlayerId] = (acc[r.asSekopPlayerId] || 0) + 1;
-      }
+      Object.entries(r.asCounts || {}).forEach(([pid, count]) => {
+        const id = Number(pid);
+        acc[id] = (acc[id] || 0) + count;
+      });
       return acc;
     }, {} as Record<number, number>);
 
@@ -332,15 +355,24 @@ export default function App() {
                       />
                       <div className="flex justify-center">
                         <button
-                          onClick={() => setCurrentAsSekop(player.id)}
-                          className={`w-9 h-9 md:w-8 md:h-8 rounded-full border-2 transition-all flex items-center justify-center ${
-                            currentAsSekop === player.id 
+                          onClick={() => toggleAsSekop(player.id)}
+                          className={`w-10 h-10 md:w-9 md:h-9 rounded-xl border-2 transition-all flex items-center justify-center relative ${
+                            currentAsCounts[player.id] > 0 
                               ? 'bg-[#1e293b] border-[#1e293b] text-white shadow-md' 
                               : 'border-[#e2e8f0] bg-white hover:border-[#1e293b]'
                           }`}
-                          aria-label={`Mark as AS Sekop for ${player.name}`}
+                          aria-label={`Toggle AS Sekop for ${player.name}`}
                         >
-                          <span className="text-xs">{currentAsSekop === player.id ? '♠' : ''}</span>
+                          <div className="flex gap-0.5">
+                            {currentAsCounts[player.id] >= 1 && <span className="text-[10px]">♠</span>}
+                            {currentAsCounts[player.id] >= 2 && <span className="text-[10px]">♠</span>}
+                            {currentAsCounts[player.id] === 0 && <span className="text-[8px] text-slate-300">AS</span>}
+                          </div>
+                          {currentAsCounts[player.id] > 0 && (
+                            <div className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 rounded-full flex items-center justify-center text-[8px] font-black border border-white">
+                              {currentAsCounts[player.id]}
+                            </div>
+                          )}
                         </button>
                       </div>
                     </div>
@@ -349,7 +381,7 @@ export default function App() {
                     onClick={saveRound}
                     className="w-full mt-6 py-4 bg-[#1e293b] text-white rounded-xl font-bold text-sm shadow-lg shadow-slate-200 hover:bg-slate-700 active:scale-[0.98] transition-all min-h-[48px]"
                   >
-                    Simpan Ronde {currentAsSekop ? '(+15 Bonus AS)' : ''}
+                    Simpan Ronde
                   </button>
                 </div>
               </motion.section>
@@ -367,7 +399,7 @@ export default function App() {
                     Riwayat Permainan
                   </h2>
                 </div>
-                <div className="flex-1 overflow-x-auto ring-1 ring-slate-100 rounded-lg">
+                <div className="flex-1 overflow-x-auto ring-1 ring-slate-100 rounded-lg custom-scrollbar">
                   <table className="w-full border-collapse min-w-[500px]">
                     <thead className="sticky top-0 bg-white z-10">
                       <tr className="border-b border-[#f1f5f9]">
@@ -390,8 +422,11 @@ export default function App() {
                                 <span className={`text-sm font-bold tabular-nums ${round.scores[player.id] > 0 ? 'text-blue-600' : round.scores[player.id] < 0 ? 'text-rose-500' : ''}`}>
                                   {round.scores[player.id] > 0 ? '+' : ''}{round.scores[player.id]}
                                 </span>
-                                {round.asSekopPlayerId === player.id && (
-                                  <span className="text-[7px] font-black bg-rose-100 text-rose-700 px-1 py-0.5 rounded leading-none">♠ AS</span>
+                                {round.asCounts && round.asCounts[player.id] > 0 && (
+                                  <span className="text-[7px] font-black bg-rose-100 text-rose-700 px-1 py-0.5 rounded flex gap-0.5 mt-0.5">
+                                    {Array(round.asCounts[player.id]).fill(0).map((_, i) => <span key={i}>♠</span>)}
+                                    {round.asCounts[player.id] * 15}
+                                  </span>
                                 )}
                               </div>
                             </td>
