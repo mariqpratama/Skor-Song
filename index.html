@@ -11,7 +11,7 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://unpkg.com/chart.js"></script>
-    <script src="https://unpkg.com/lucide-react@0.469.0/dist/umd/lucide-react.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/framer-motion@11/dist/framer-motion.js"></script>
 
     <style>
@@ -48,27 +48,21 @@
         const MotionModule = window.Motion || window.FramerMotion || { motion: ({children}) => <div>{children}</div>, AnimatePresence: ({children}) => <Fragment>{children}</Fragment> };
         const { motion, AnimatePresence } = MotionModule;
         
-        // Robust icon component that looks up Lucide icons by name with fallbacks
-        const Icon = ({ name, className, size = 16 }) => {
-            const lib = window.LucideReact || window.lucide || window.Lucide || {};
-            const icons = lib.icons || lib;
+        // Robust icon component using FontAwesome (Bulletproof CDN)
+        const Icon = ({ name, className }) => {
+            const iconMap = {
+                'Pencil': 'fa-pen-to-square',
+                'Plus': 'fa-plus',
+                'History': 'fa-clock-rotate-left',
+                'Trash2': 'fa-trash-can',
+                'Award': 'fa-medal',
+                'TrendingUp': 'fa-chart-line'
+            };
             
-            const lookup = (n) => icons[n] || icons[n.charAt(0).toUpperCase() + n.slice(1)];
+            const faIcon = iconMap[name] || 'fa-circle';
             
-            let Component = lookup(name);
-            
-            // Fallbacks for common naming variations
-            if (!Component) {
-                if (name === 'Pencil') Component = lookup('Edit') || lookup('Edit3') || lookup('Edit2');
-                if (name === 'Trash2') Component = lookup('Trash');
-                if (name === 'History') Component = lookup('Clock') || lookup('RotateCcw');
-            }
-            
-            if (!Component) {
-                return <span className={className} style={{fontSize: size + 'px'}}>•</span>;
-            }
-            
-            return <Component className={className} size={size} strokeWidth={2} />;
+            // We use FontAwesome via CSS classes for maximum stability
+            return <i className={`fa-solid ${faIcon} ${className}`} style={{ width: '1em', height: '1em', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}></i>;
         };
 
         const DEFAULT_COLORS = [
@@ -467,7 +461,7 @@
                             <div className="flex items-center gap-2 text-[9px] font-black tracking-[0.3em]">
                                 <span>SONG CALCULATOR</span>
                                 <span className="w-1.5 h-1.5 bg-[#1e293b] rounded-full"></span>
-                                <span>MOBILE OPTIMIZED</span>
+                                <span>Version 1.0</span>
                             </div>
                         </footer>
                     </div>
