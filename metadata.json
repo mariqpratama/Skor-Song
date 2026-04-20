@@ -1,0 +1,6 @@
+{
+  "name": "Kalkulator Skor Game Song",
+  "description": "Aplikasi pencatat skor permainan kartu Song dengan fitur riwayat ronde, leaderboard, dan grafik pergerakan skor.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
