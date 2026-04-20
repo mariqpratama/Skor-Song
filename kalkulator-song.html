@@ -45,7 +45,8 @@
 
     <script type="text/babel">
         const { useState, useEffect, useRef, Fragment } = React;
-        const { motion, AnimatePresence } = FramerMotion;
+        const MotionModule = window.Motion || window.FramerMotion || { motion: ({children}) => <div>{children}</div>, AnimatePresence: ({children}) => <div>{children}</div> };
+        const { motion, AnimatePresence } = MotionModule;
         const { 
             Users, History, Trophy, Plus, Trash2, 
             Play, RotateCcw, Award, ChevronRight, 
